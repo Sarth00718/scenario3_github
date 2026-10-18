@@ -1,32 +1,18 @@
 /*
  * SCENARIO 3 – Project hosted on GITHUB
  * ----------------------------------------
- * Pre-requisites:
- *   1. Push this folder to GitHub (replace <your-username> below).
- *   2. Jenkinsfile must be in the root of the GitHub repo.
+ * When using "Pipeline Script from SCM", Jenkins automatically checks out
+ * the repo before running any stage — no explicit Checkout stage needed.
  *
  * Setup in Jenkins UI:
- *   - Manage Jenkins → Plugins → install: Git plugin, Pipeline plugin
  *   - New Item → Pipeline → Pipeline Definition: "Pipeline Script from SCM"
  *       SCM            : Git
- *       Repository URL : https://github.com/<your-username>/demo_project.git
- *       Credentials    : Add GitHub PAT if repo is private
- *       Branch         : * /main
+ *       Repository URL : https://github.com/Sarth00718/scenario3_github.git
+ *       Credentials    : github-pat
+ *       Branch         : */main
  *       Script Path    : Jenkinsfile
  *
- * Trigger options (choose one):
- *   A. "GitHub hook trigger for GITScm polling"  → GitHub webhook (instant)
- *        GitHub repo → Settings → Webhooks → Add webhook
- *        Payload URL : http://<your-jenkins-host>:8080/github-webhook/
- *        Content type: application/json
- *        Events      : Just the push event
- *
- *   B. "Poll SCM"  → periodic polling (no public URL needed)
- *        Schedule: H/5 * * * *
- *
- * NOTE:
- *   - "agent any" is safe here because GitHub checkout doesn't rely on
- *     a local drive path.
+ * Trigger: Poll SCM → H/5 * * * *
  */
 
 pipeline {
@@ -34,16 +20,6 @@ pipeline {
     agent any
 
     stages {
-
-        // Checkout Code
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/SarthNarola/scenario3_github.git'
-                    // For a private repo, add:
-                    // credentialsId: 'github-pat-credential-id'
-            }
-        }
 
         // Show Workspace
         stage('Show Workspace') {
