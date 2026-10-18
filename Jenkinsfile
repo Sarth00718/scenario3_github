@@ -39,6 +39,7 @@ pipeline {
         stage('Deploy Containers') {
             steps {
                 bat 'docker-compose down'
+                bat 'docker rm -f cntdbapp cntwebapp || exit 0'
                 bat 'docker-compose up -d'
             }
         }
