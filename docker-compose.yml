@@ -1,0 +1,14 @@
+services:
+  dbapp:
+    build: ./dbapp
+    container_name: cntdbapp
+    ports:
+      - "8001:8000"
+
+  webapp:
+    build: ./webapp
+    container_name: cntwebapp
+    ports:
+      - "8000:5000"
+    depends_on:
+      - dbapp

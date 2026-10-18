@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Iris Prediction - Scenario 5</title>
+</head>
+<body>
+    <h2>Iris Flower Prediction</h2>
+    <p><b>Scenario 5 — Docker Compose Basic</b></p>
+    <p>Architecture: Browser &rarr; WebApp (ML + UI) &rarr; DBApp (Database) &rarr; SQLite</p>
+    <hr>
+
+    <form action="/predict" method="POST">
+        <p>
+            <label>Sepal Length (cm):<br>
+                <input type="text" name="sepal_length" required placeholder="e.g. 5.1">
+            </label>
+        </p>
+        <p>
+            <label>Sepal Width (cm):<br>
+                <input type="text" name="sepal_width" required placeholder="e.g. 3.5">
+            </label>
+        </p>
+        <p>
+            <label>Petal Length (cm):<br>
+                <input type="text" name="petal_length" required placeholder="e.g. 1.4">
+            </label>
+        </p>
+        <p>
+            <label>Petal Width (cm):<br>
+                <input type="text" name="petal_width" required placeholder="e.g. 0.2">
+            </label>
+        </p>
+        <p><input type="submit" value="Predict and Save to DBApp"></p>
+    </form>
+
+    {% if prediction %}
+    <hr>
+    <p>Prediction: <b>{{ prediction }}</b></p>
+    <p><i>Saved to DBApp via HTTP.</i></p>
+    {% endif %}
+
+    <hr>
+    <p><a href="/show_records">View All Records (from DBApp)</a></p>
+</body>
+</html>

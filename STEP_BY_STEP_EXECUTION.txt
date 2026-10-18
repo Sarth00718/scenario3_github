@@ -1,0 +1,190 @@
+================================================================================
+  SCENARIO 3 — Jenkins with a GITHUB REPOSITORY
+================================================================================
+
+PROJECT STRUCTURE (same as Scenario 2 — Jenkinsfile must be in repo root)
+--------------------------------------------------------------------------
+demo_project/
+├── dbapp/
+├── webapp/
+├── test_sample.py
+├── docker-compose.yml
+├── .gitignore
+└── Jenkinsfile       ← copy from scenario3_github\Jenkinsfile
+
+WHAT HAPPENS IN THIS SCENARIO
+------------------------------
+- demo_project is pushed to GitHub.
+- Jenkins polls GitHub OR receives a webhook on every push.
+- Pipeline reads Jenkinsfile from GitHub automatically.
+- "agent any" is safe — no local drive dependency.
+- Full CI/CD: push code → Jenkins triggers → build → test → deploy.
+
+PRE-REQUISITES
+--------------
+1. GitHub account created.
+2. Jenkins running at http://localhost:8080.
+3. Docker Desktop running.
+4. (For webhook) Jenkins accessible from the internet:
+   - Use ngrok: ngrok http 8080
+   - Or deploy Jenkins on a cloud VM.
+
+STEP 1 — Prepare the GitHub Repo
+----------------------------------
+a. Create a new GitHub repository: e.g., "demo_project"
+   (public or private — both work)
+
+b. On your machine, in the scenario3_github folder:
+     cd "C:\Users\SARTH\OneDrive\Desktop\MLOps\practical_5_cicd\scenario3_github"
+     git init                            (skip if already done in Scenario 2)
+     git checkout -b main
+
+     # Jenkinsfile is already in this folder — no copy needed.
+
+     # Update the GitHub URL inside Jenkinsfile:
+     # Change: url: 'https://github.com/<your-username>/demo_project.git'
+     # To:     url: 'https://github.com/YOUR_ACTUAL_USERNAME/demo_project.git'
+
+     git add .
+     git commit -m "Initial commit"
+     git remote add origin https://github.com/<your-username>/demo_project.git
+     git push -u origin main
+
+STEP 2 — (Optional) Create GitHub Personal Access Token
+---------------------------------------------------------
+Needed only if the repo is PRIVATE.
+
+a. GitHub → Settings → Developer Settings → Personal Access Tokens → Classic
+b. Generate new token → Select scopes: repo (full control)
+c. Copy the token.
+d. In Jenkins → Manage Jenkins → Credentials → System → Global
+   → Add Credentials:
+       Kind     : Username with password
+       Username : your-github-username
+       Password : paste the PAT
+       ID       : github-pat
+
+STEP 3 — Install Required Plugins
+-----------------------------------
+Manage Jenkins → Plugins → Available Plugins:
+  ✓ Git plugin
+  ✓ Pipeline plugin
+  ✓ GitHub plugin  (for webhook trigger)
+
+STEP 4 — Configure the Built-In Node
+--------------------------------------
+Manage Jenkins → Nodes → Built-In Node → Configure
+  Labels : local    (or leave empty — "agent any" is fine for GitHub)
+  Usage  : Use this node as much as possible
+
+STEP 5 — Create a New Pipeline Job
+------------------------------------
+a. Jenkins Dashboard → New Item
+b. Name: IrisApp-Scenario3-GitHub
+c. Select: Pipeline → OK
+
+STEP 6 — Configure the Job
+-----------------------------
+General tab:
+  - (Optional) Check: GitHub project
+    Project URL: https://github.com/<your-username>/demo_project
+  - (Optional) Discard old builds → 5
+
+Triggers tab — choose ONE:
+
+  OPTION A (Recommended — instant trigger on push):
+    ✓ GitHub hook trigger for GITScm polling
+    Then configure webhook in GitHub (see Step 7A).
+
+  OPTION B (No public URL needed — polling):
+    ✓ Poll SCM
+    Schedule: H/5 * * * *
+
+Pipeline tab:
+  - Definition     : Pipeline Script from SCM
+  - SCM            : Git
+  - Repository URL : https://github.com/<your-username>/demo_project.git
+  - Credentials    : github-pat  (only for private repos)
+  - Branch         : */main
+  - Script Path    : Jenkinsfile
+
+d. Save.
+
+STEP 7A — Configure GitHub Webhook (for Option A trigger)
+-----------------------------------------------------------
+Requires Jenkins to be reachable from the internet.
+
+Using ngrok (easy for local demos):
+  a. Download ngrok from https://ngrok.com/download
+  b. Run: ngrok http 8080
+  c. Copy the HTTPS forwarding URL e.g.: https://abc123.ngrok.io
+
+In GitHub repo → Settings → Webhooks → Add webhook:
+  Payload URL  : https://abc123.ngrok.io/github-webhook/
+                 (note the trailing slash — required!)
+  Content type : application/json
+  Secret       : (leave empty or set one)
+  Events       : ✓ Just the push event
+→ Add webhook.
+
+STEP 8 — Run the Pipeline
+---------------------------
+a. Click "Build Now" (first run, or any time)
+b. After webhook is set: just do "git push" and Jenkins triggers automatically.
+c. Watch stages: Checkout → Show Workspace → Build Images → Run Tests → Deploy
+
+STEP 9 — Verify the Application
+---------------------------------
+a. Browser → http://localhost:8000  (Iris prediction form)
+b. Browser → http://localhost:8000/show_records
+c. Browser → http://localhost:8001/records
+
+STEP 10 — Full CI/CD Demo
+---------------------------
+1. Edit webapp/templates/index.html — change heading to "Iris Predictor v2.0"
+2. Commit and push:
+     git add webapp/templates/index.html
+     git commit -m "Update heading for demo"
+     git push
+3. Jenkins webhook fires instantly (or Poll SCM detects within 5 min).
+4. Stages run: Checkout → Build → Test → Deploy
+5. Refresh http://localhost:8000 → new heading visible!
+
+This demonstrates the full CI/CD cycle:
+  Code change → Push → Auto-trigger → Test → Deploy → Live update
+
+STEP 11 — Tear Down
+---------------------
+  docker-compose down
+
+COMPARISON TABLE
+-----------------
+Feature              | Scenario 1       | Scenario 2         | Scenario 3
+---------------------|------------------|--------------------|-----------------
+Code location        | Local folder     | Local git repo     | GitHub
+Pipeline definition  | Pasted in UI     | SCM (Jenkinsfile)  | SCM (Jenkinsfile)
+Checkout stage       | Not needed       | git file:///       | git https://
+Agent directive      | node+label+path  | label 'local'      | any
+Auto-trigger         | Not possible     | Poll SCM           | Webhook or Poll
+Collaboration        | Solo only        | Solo only          | Full team
+Production-ready?    | No               | Limited            | Yes
+
+TROUBLESHOOTING
+---------------
+- "Couldn't find any revision to build"
+  → Check branch name: */main vs */master
+  → Verify the repo URL is correct and accessible.
+
+- Webhook not firing
+  → Ensure Jenkins URL ends with /github-webhook/  (trailing slash!)
+  → Check ngrok is still running (it expires after a few hours on free tier).
+
+- Docker image name mismatch in "Run Tests" stage
+  → After Build Images, run: docker images
+  → Find the webapp image name (Compose uses job/folder name as prefix).
+  → Update the image name in Jenkinsfile, commit, push, rebuild.
+
+- For private repo: "Authentication required"
+  → Add GitHub PAT as Jenkins credentials and reference via credentialsId.
+
+================================================================================
