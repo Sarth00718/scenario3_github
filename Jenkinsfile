@@ -9,7 +9,7 @@
  *       SCM            : Git
  *       Repository URL : https://github.com/Sarth00718/scenario3_github.git
  *       Credentials    : github-pat
- *       Branch         : */main
+ *       Branch         : * /main
  *       Script Path    : Jenkinsfile
  *
  * Trigger: Poll SCM → H/5 * * * *
