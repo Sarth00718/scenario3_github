@@ -38,6 +38,7 @@ pipeline {
         // Deploy Containers
         stage('Deploy Containers') {
             steps {
+                bat 'docker-compose down'
                 bat 'docker-compose up -d'
             }
         }
